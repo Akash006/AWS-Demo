@@ -42,3 +42,10 @@ async function upload() {
   const data = await res.json();
   alert(data.url ? "Uploaded: " + data.url : data.message);
 }
+
+async function loadOrders() {
+  const res = await fetch('/api/orders');
+  const data = await res.json();
+
+  console.log(data); // or render in UI
+}

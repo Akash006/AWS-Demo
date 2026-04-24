@@ -1,16 +1,16 @@
 const express = require('express');
 const os = require('os');
 const multer = require('multer');
+const path = require('path'); // 👈 ADD THIS
 
 const config = require('./config');
-const db = require('./db');
 const s3 = require('./s3');
 
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
 
 app.use(express.json());
-app.use(express.static('../public'));
+app.use(express.static(path.join(__dirname, '../public')));
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -20,31 +20,31 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// DB: Save order
+const dynamo = require('./dynamo');
+
+// Save order
 app.post('/api/order', async (req, res) => {
   if (!config.db.enabled) {
     return res.json({ message: "DB not enabled" });
   }
 
-  const { item } = req.body;
-
   try {
-    await db.query("INSERT INTO orders (item) VALUES (?)", [item]);
-    res.json({ message: "Order saved" });
+    await dynamo.saveOrder(req.body.item);
+    res.json({ message: "Order saved in DynamoDB" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// DB: Fetch orders
+// Fetch orders
 app.get('/api/orders', async (req, res) => {
   if (!config.db.enabled) {
     return res.json({ message: "DB not enabled" });
   }
 
   try {
-    const [rows] = await db.query("SELECT * FROM orders");
-    res.json(rows);
+    const orders = await dynamo.getOrders();
+    res.json(orders);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
