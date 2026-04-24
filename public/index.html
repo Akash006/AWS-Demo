@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>QuickBites</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="container">
+
+    <h1>🚀 QuickBites Cloud Demo</h1>
+
+    <div class="card">
+      <h2>🖥️ Instance Check</h2>
+      <button onclick="checkHealth()">Check Instance</button>
+      <p id="instance"></p>
+    </div>
+
+    <div class="card">
+      <h2>📦 Place Order</h2>
+      <input id="item" type="text" placeholder="Enter food item" />
+      <button onclick="placeOrder()">Order</button>
+    </div>
+
+    <div class="card">
+      <h2>📤 Upload Image</h2>
+      <input type="file" id="file" />
+      <button onclick="upload()">Upload</button>
+    </div>
+
+    <div class="footer">
+      Built for AWS Demo • QuickBites 🍔
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
