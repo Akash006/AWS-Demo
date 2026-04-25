@@ -4,7 +4,6 @@ set -euxo pipefail
 # Install Docker (Amazon Linux/RHEL family)
 if command -v yum >/dev/null 2>&1; then
   yum update -y
-  sudo amazon-linux-extras install -y docker
   yum install -y docker
 fi
 
