@@ -1,64 +1,51 @@
 #!/bin/bash
 set -euxo pipefail
 
-# Install dependencies (Amazon Linux/RHEL family)
+# Install Docker (Amazon Linux/RHEL family)
 if command -v yum >/dev/null 2>&1; then
-	yum update -y
-	yum install -y nginx nodejs npm git
+  yum update -y
+  sudo amazon-linux-extras install -y docker
+  yum install -y docker
 fi
 
-# Install dependencies (Ubuntu/Debian family)
+# Install Docker (Ubuntu/Debian family)
 if command -v apt-get >/dev/null 2>&1; then
-	apt-get update -y
-	apt-get install -y nginx nodejs npm git
+  apt-get update -y
+  apt-get install -y docker.io
 fi
 
-# Determine default SSH user on this AMI
-APP_USER="ec2-user"
-if id -u ubuntu >/dev/null 2>&1; then
-	APP_USER="ubuntu"
-elif id -u ec2-user >/dev/null 2>&1; then
-	APP_USER="ec2-user"
-elif id -u admin >/dev/null 2>&1; then
-	APP_USER="admin"
-else
-	APP_USER="root"
-fi
+systemctl enable --now docker
+systemctl start docker
 
-cd /opt
-if [ -d /opt/AWS-Demo/.git ]; then
-	cd /opt/AWS-Demo
-	git pull --rebase
-else
-	git clone https://github.com/Akash006/AWS-Demo.git
-	cd /opt/AWS-Demo
-fi
+# -------------------------------------------------------
+# Environment variables for the app
+# Edit the values below before running this script
+# -------------------------------------------------------
+cat > /etc/quickbites.env <<'EOF'
+PORT=3000
 
-# Install app deps from package.json
-npm install
+ENABLE_DB=true
+DB_TYPE=dynamodb
+DYNAMO_TABLE=quickbites-orders
+DYNAMO_REGION=ap-south-1
 
-# Ensure app user can manage project files
-chown -R "$APP_USER":"$APP_USER" /opt/AWS-Demo
+ENABLE_S3=true
+S3_BUCKET=your-bucket-name
+S3_REGION=ap-south-1
+AWS_REGION=ap-south-1
 
-# Run app via systemd (simpler and user-agnostic compared to PM2 lists)
-cat >/etc/systemd/system/quickbites.service <<EOF
-[Unit]
-Description=QuickBites Node App
-After=network.target
-
-[Service]
-Type=simple
-User=$APP_USER
-WorkingDirectory=/opt/AWS-Demo
-Environment=NODE_ENV=production
-EnvironmentFile=-/opt/AWS-Demo/.env
-ExecStart=/usr/bin/node /opt/AWS-Demo/app/server.js
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
+# Optional (only if EC2 has no IAM role attached):
+# AWS_ACCESS_KEY_ID=
+# AWS_SECRET_ACCESS_KEY=
 EOF
+chmod 600 /etc/quickbites.env
 
-systemctl daemon-reload
-systemctl enable --now quickbites
+# Pull and run the app image
+docker rm -f quickbites || true
+
+docker run -d \
+  --name quickbites \
+  --restart unless-stopped \
+  -p 80:3000 \
+  --env-file /etc/quickbites.env \
+  akash006/aws-demo-quickbites-webapp:latest
