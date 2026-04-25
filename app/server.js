@@ -8,6 +8,7 @@ const s3 = require('./s3');
 
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
+const isDynamoEnabled = config.db.enabled && config.db.type === 'dynamodb';
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
@@ -24,8 +25,8 @@ const dynamo = require('./dynamo');
 
 // Save order
 app.post('/api/order', async (req, res) => {
-  if (!config.db.enabled) {
-    return res.json({ message: "DB not enabled" });
+  if (!isDynamoEnabled) {
+    return res.json({ message: "DB not enabled (set ENABLE_DB=true and DB_TYPE=dynamodb)" });
   }
 
   try {
@@ -38,8 +39,8 @@ app.post('/api/order', async (req, res) => {
 
 // Fetch orders
 app.get('/api/orders', async (req, res) => {
-  if (!config.db.enabled) {
-    return res.json({ message: "DB not enabled" });
+  if (!isDynamoEnabled) {
+    return res.json({ message: "DB not enabled (set ENABLE_DB=true and DB_TYPE=dynamodb)" });
   }
 
   try {

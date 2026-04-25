@@ -5,13 +5,25 @@ const config = require('./config');
 let client, docClient;
 
 if (config.db.enabled && config.db.type === 'dynamodb') {
-  client = new DynamoDBClient({ region: process.env.AWS_REGION });
+  client = new DynamoDBClient({ region: config.db.region });
   docClient = DynamoDBDocumentClient.from(client);
 }
 
+function assertDynamoEnabled() {
+  if (!docClient) {
+    throw new Error('DynamoDB is not enabled. Check ENABLE_DB=true and DB_TYPE=dynamodb.');
+  }
+
+  if (!config.db.dynamoTable) {
+    throw new Error('DYNAMO_TABLE is missing in environment configuration.');
+  }
+}
+
 async function saveOrder(item) {
+  assertDynamoEnabled();
+
   const params = {
-    TableName: process.env.DYNAMO_TABLE,
+    TableName: config.db.dynamoTable,
     Item: {
       id: Date.now().toString(),
       item: item,
@@ -23,8 +35,10 @@ async function saveOrder(item) {
 }
 
 async function getOrders() {
+  assertDynamoEnabled();
+
   const params = {
-    TableName: process.env.DYNAMO_TABLE
+    TableName: config.db.dynamoTable
   };
 
   const data = await docClient.send(new ScanCommand(params));
