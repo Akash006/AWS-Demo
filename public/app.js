@@ -74,7 +74,8 @@ async function loadOrders() {
     const data = await res.json();
 
     if (!res.ok) {
-      statusEl.innerText = 'Unable to load orders.';
+      const detail = data.details ? ` (${data.details})` : '';
+      statusEl.innerText = `${data.error || 'Unable to load orders.'}${detail}`;
       return;
     }
 

@@ -47,8 +47,32 @@ app.get('/api/orders', async (req, res) => {
     const orders = await dynamo.getOrders();
     res.json(orders);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[GET /api/orders] DynamoDB error:', {
+      name: err?.name,
+      message: err?.message,
+      code: err?.code,
+      statusCode: err?.$metadata?.httpStatusCode
+    });
+
+    const knownAwsError = {
+      ResourceNotFoundException: 'DynamoDB table not found in configured region.',
+      AccessDeniedException: 'IAM role/user lacks DynamoDB permissions.',
+      UnrecognizedClientException: 'AWS credentials are invalid or unavailable.',
+      CredentialsProviderError: 'AWS credentials not found. Attach an IAM role or configure credentials.',
+      ValidationException: 'Invalid DynamoDB configuration. Verify table name and region.',
+      MissingRegion: 'AWS region missing. Set DYNAMO_REGION or AWS_REGION.',
+      ConfigError: 'AWS SDK config error. Check credentials/region variables.'
+    };
+
+    const message = knownAwsError[err?.name] || err?.message || 'Failed to fetch orders from DynamoDB.';
+    res.status(500).json({ error: message, details: err?.name || 'UnknownError' });
   }
+});
+
+// DB diagnostics (non-secret)
+app.get('/api/db-status', async (req, res) => {
+  const status = await dynamo.getStatus();
+  res.status(status.ok ? 200 : 500).json(status);
 });
 
 // S3: Upload file
@@ -123,4 +147,16 @@ app.get('/api/images', async (req, res) => {
 
 app.listen(config.port, () => {
   console.log(`Server running on port ${config.port}`);
+  console.log('[Startup] DB config:', {
+    enabled: config.db.enabled,
+    type: config.db.type,
+    table: config.db.dynamoTable,
+    region: config.db.region,
+    credentialsSource: config.aws.hasStaticCredentials ? 'env-static' : 'default-provider-chain'
+  });
+  console.log('[Startup] S3 config:', {
+    enabled: config.s3.enabled,
+    bucket: config.s3.bucket,
+    region: config.s3.region
+  });
 });
