@@ -88,3 +88,42 @@ button:hover {
   font-size: 0.9rem;
   color: #6b7280;
 }
+
+.orders-status {
+  margin-top: 10px;
+  color: #6b7280;
+}
+
+.orders-grid {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.order-item {
+  background: linear-gradient(180deg, #ffffff, #f8faff);
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.08);
+}
+
+.order-item .order-title {
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 6px;
+}
+
+.order-item .order-meta {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.order-empty {
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 14px;
+  color: #64748b;
+  background: #f8fafc;
+}

@@ -23,6 +23,13 @@
     </div>
 
     <div class="card">
+      <h2>🧾 Recent Orders</h2>
+      <button onclick="loadOrders()">Refresh Orders</button>
+      <p id="orders-status" class="orders-status">Loading orders...</p>
+      <div id="orders" class="orders-grid"></div>
+    </div>
+
+    <div class="card">
       <h2>📤 Upload Image</h2>
       <input type="file" id="file" />
       <button onclick="upload()">Upload</button>
