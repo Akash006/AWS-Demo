@@ -110,7 +110,7 @@ npm install
 ```
 pm2 list
 pm2 logs
-pm2 restart quickbites
+pm2 restart quickbites --update-env
 pm2 stop quickbites
 pm2 delete quickbites
 ```
