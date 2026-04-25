@@ -9,19 +9,25 @@ const s3 = require('./s3');
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
 const isDynamoEnabled = config.db.enabled && config.db.type === 'dynamodb';
+const dynamo = require('./dynamo');
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
 // Health check
-app.get('/api/health', (req, res) => {
-  res.json({
+app.get('/api/health', async (req, res) => {
+  const response = {
     status: 'OK',
-    instance: os.hostname()
-  });
-});
+    instance: os.hostname(),
+    dbRouteAvailable: true
+  };
 
-const dynamo = require('./dynamo');
+  if (req.query.deep === '1') {
+    response.dbStatus = await dynamo.getStatus();
+  }
+
+  res.json(response);
+});
 
 // Save order
 app.post('/api/order', async (req, res) => {
@@ -70,7 +76,7 @@ app.get('/api/orders', async (req, res) => {
 });
 
 // DB diagnostics (non-secret)
-app.get('/api/db-status', async (req, res) => {
+app.get(['/api/db-status', '/db-status'], async (req, res) => {
   const status = await dynamo.getStatus();
   res.status(status.ok ? 200 : 500).json(status);
 });
@@ -93,8 +99,12 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
   };
 
   try {
-    const result = await s3.upload(params).promise();
-    res.json({ url: result.Location });
+    await s3.uploadObject(params);
+    const url = await s3.getObjectSignedUrl({
+      Bucket: config.s3.bucket,
+      Key: params.Key
+    }, 60 * 60);
+    res.json({ url, key: params.Key });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -107,10 +117,10 @@ app.get('/api/images', async (req, res) => {
   }
 
   try {
-    const listResponse = await s3.listObjectsV2({
+    const listResponse = await s3.listObjects({
       Bucket: config.s3.bucket,
       MaxKeys: 50
-    }).promise();
+    });
 
     const objects = listResponse.Contents || [];
 
@@ -124,11 +134,10 @@ app.get('/api/images', async (req, res) => {
 
     const images = await Promise.all(
       imageObjects.map(async (obj) => {
-        const url = await s3.getSignedUrlPromise('getObject', {
+        const url = await s3.getObjectSignedUrl({
           Bucket: config.s3.bucket,
-          Key: obj.Key,
-          Expires: 60 * 60
-        });
+          Key: obj.Key
+        }, 60 * 60);
 
         return {
           key: obj.Key,
