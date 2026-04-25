@@ -1,6 +1,7 @@
 window.onload = async function () {
   await checkHealth();
   await loadOrders();
+  await loadImages();
 };
 
 async function checkHealth() {
@@ -54,6 +55,11 @@ async function upload() {
 
   const data = await res.json();
   alert(data.url ? "Uploaded: " + data.url : data.message);
+
+  if (res.ok) {
+    fileInput.value = '';
+    await loadImages();
+  }
 }
 
 async function loadOrders() {
@@ -115,4 +121,61 @@ function escapeHtml(value) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
+}
+
+async function loadImages() {
+  const statusEl = document.getElementById('images-status');
+  const container = document.getElementById('images');
+
+  statusEl.innerText = 'Fetching uploaded images...';
+  container.innerHTML = '';
+
+  try {
+    const res = await fetch('/api/images');
+    const data = await res.json();
+
+    if (!res.ok) {
+      statusEl.innerText = 'Unable to load images.';
+      container.innerHTML = '<div class="order-empty">Could not fetch images right now.</div>';
+      return;
+    }
+
+    if (!Array.isArray(data)) {
+      statusEl.innerText = data.message || 'Images are not available right now.';
+      container.innerHTML = '<div class="order-empty">No image data available.</div>';
+      return;
+    }
+
+    if (data.length === 0) {
+      statusEl.innerText = 'No images uploaded yet.';
+      container.innerHTML = '<div class="order-empty">Upload your first image above 📤</div>';
+      return;
+    }
+
+    statusEl.innerText = `Showing ${data.length} image${data.length > 1 ? 's' : ''}`;
+
+    container.innerHTML = data.map((image) => {
+      const dateText = image.lastModified
+        ? new Date(image.lastModified).toLocaleString()
+        : 'Unknown date';
+      const sizeKb = typeof image.size === 'number'
+        ? `${Math.max(1, Math.round(image.size / 1024))} KB`
+        : 'Unknown size';
+
+      return `
+        <div class="image-card">
+          <a href="${escapeHtml(image.url || '#')}" target="_blank" rel="noopener noreferrer">
+            <img src="${escapeHtml(image.url || '')}" alt="${escapeHtml(image.key || 'Uploaded image')}" />
+          </a>
+          <div class="image-card-body">
+            <div class="image-name" title="${escapeHtml(image.key || '')}">${escapeHtml(image.key || 'Unnamed image')}</div>
+            <div class="image-meta">${escapeHtml(sizeKb)} • ${escapeHtml(dateText)}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    statusEl.innerText = 'Error while loading images.';
+    container.innerHTML = '<div class="order-empty">Could not fetch images right now.</div>';
+  }
 }

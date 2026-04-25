@@ -57,15 +57,65 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     return res.json({ message: "S3 not enabled" });
   }
 
+  if (!req.file) {
+    return res.status(400).json({ message: "No file uploaded" });
+  }
+
   const params = {
     Bucket: config.s3.bucket,
     Key: Date.now() + "-" + req.file.originalname,
-    Body: req.file.buffer
+    Body: req.file.buffer,
+    ContentType: req.file.mimetype
   };
 
   try {
     const result = await s3.upload(params).promise();
     res.json({ url: result.Location });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// S3: List uploaded images
+app.get('/api/images', async (req, res) => {
+  if (!config.s3.enabled) {
+    return res.json({ message: "S3 not enabled" });
+  }
+
+  try {
+    const listResponse = await s3.listObjectsV2({
+      Bucket: config.s3.bucket,
+      MaxKeys: 50
+    }).promise();
+
+    const objects = listResponse.Contents || [];
+
+    const imageObjects = objects
+      .filter((obj) => {
+        const key = (obj.Key || '').toLowerCase();
+        return key.endsWith('.jpg') || key.endsWith('.jpeg') || key.endsWith('.png') || key.endsWith('.gif') || key.endsWith('.webp');
+      })
+      .sort((a, b) => new Date(b.LastModified || 0) - new Date(a.LastModified || 0))
+      .slice(0, 24);
+
+    const images = await Promise.all(
+      imageObjects.map(async (obj) => {
+        const url = await s3.getSignedUrlPromise('getObject', {
+          Bucket: config.s3.bucket,
+          Key: obj.Key,
+          Expires: 60 * 60
+        });
+
+        return {
+          key: obj.Key,
+          size: obj.Size,
+          lastModified: obj.LastModified,
+          url
+        };
+      })
+    );
+
+    res.json(images);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
