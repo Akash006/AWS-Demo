@@ -37,14 +37,12 @@ AWS_REGION=ap-south-1
 # AWS_ACCESS_KEY_ID=
 # AWS_SECRET_ACCESS_KEY=
 EOF
-chmod 600 /etc/quickbites.env
 
-# Pull and run the app image
-docker rm -f quickbites || true
+chmod 600 /etc/quickbites.env
 
 docker run -d \
   --name quickbites \
   --restart unless-stopped \
   -p 80:3000 \
   --env-file /etc/quickbites.env \
-  akash006/aws-demo-quickbites-webapp:latest
+  akash006/aws-demo-quickbites-webapp:AL2023
