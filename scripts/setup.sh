@@ -45,4 +45,4 @@ docker run -d \
   --restart unless-stopped \
   -p 80:3000 \
   --env-file /etc/quickbites.env \
-  akash006/aws-demo-quickbites-webapp:AL2023
+  akash006/aws-demo-quickbites-webapp:v0427

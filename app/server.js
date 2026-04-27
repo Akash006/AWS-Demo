@@ -32,7 +32,7 @@ app.get('/api/health', async (req, res) => {
 // Save order
 app.post('/api/order', async (req, res) => {
   if (!isDynamoEnabled) {
-    return res.json({ message: "DB not enabled (set ENABLE_DB=true and DB_TYPE=dynamodb)" });
+    return res.status(503).json({ error: "DB not enabled (set ENABLE_DB=true and DB_TYPE=dynamodb)" });
   }
 
   try {
@@ -46,7 +46,7 @@ app.post('/api/order', async (req, res) => {
 // Fetch orders
 app.get('/api/orders', async (req, res) => {
   if (!isDynamoEnabled) {
-    return res.json({ message: "DB not enabled (set ENABLE_DB=true and DB_TYPE=dynamodb)" });
+    return res.status(503).json({ error: "DB not enabled (set ENABLE_DB=true and DB_TYPE=dynamodb)" });
   }
 
   try {
@@ -84,7 +84,7 @@ app.get(['/api/db-status', '/db-status'], async (req, res) => {
 // S3: Upload file
 app.post('/api/upload', upload.single('file'), async (req, res) => {
   if (!config.s3.enabled) {
-    return res.json({ message: "S3 not enabled" });
+    return res.status(503).json({ error: "S3 not enabled" });
   }
 
   if (!req.file) {
@@ -113,7 +113,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 // S3: List uploaded images
 app.get('/api/images', async (req, res) => {
   if (!config.s3.enabled) {
-    return res.json({ message: "S3 not enabled" });
+    return res.status(503).json({ error: "S3 not enabled" });
   }
 
   try {

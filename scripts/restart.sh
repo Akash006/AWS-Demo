@@ -3,7 +3,7 @@
 # or want to pull the latest Docker image.
 set -euxo pipefail
 
-IMAGE="akash006/aws-demo-quickbites-webapp:latest"
+IMAGE="akash006/aws-demo-quickbites-webapp:v0427"
 ENV_FILE="/etc/quickbites.env"
 
 echo "Pulling latest image..."

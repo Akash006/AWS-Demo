@@ -19,20 +19,27 @@ async function placeOrder() {
     return;
   }
 
-  const res = await fetch('/api/order', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ item: item.trim() })
-  });
+  try {
+    const res = await fetch('/api/order', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ item: item.trim() })
+    });
 
-  const data = await res.json();
-  alert(data.message || "Order placed!");
+    const data = await res.json();
 
-  if (res.ok) {
+    if (!res.ok) {
+      alert(data.error || data.message || 'Failed to place order');
+      return;
+    }
+
+    alert(data.message || 'Order placed!');
     document.getElementById('item').value = '';
     await loadOrders();
+  } catch (err) {
+    alert('Failed to place order: network error');
   }
 }
 
@@ -48,17 +55,24 @@ async function upload() {
   const formData = new FormData();
   formData.append('file', file);
 
-  const res = await fetch('/api/upload', {
-    method: 'POST',
-    body: formData
-  });
+  try {
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData
+    });
 
-  const data = await res.json();
-  alert(data.url ? "Uploaded: " + data.url : data.message);
+    const data = await res.json();
 
-  if (res.ok) {
+    if (!res.ok) {
+      alert(data.error || data.message || 'Failed to upload file');
+      return;
+    }
+
+    alert(data.url ? 'Uploaded: ' + data.url : (data.message || 'Upload completed'));
     fileInput.value = '';
     await loadImages();
+  } catch (err) {
+    alert('Failed to upload file: network error');
   }
 }
 
