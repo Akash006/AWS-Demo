@@ -104,7 +104,6 @@ npm install
 2. Set **User pool name** (example: `quickbites-users`)
 3. Configure sign-in options:
   - Email (recommended)
-4. Configure password policy and MFA as needed
 5. Create the user pool
 
 ### Create App Client
