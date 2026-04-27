@@ -14,6 +14,7 @@ Build and deploy a **production-style scalable web app on AWS**.
 - Enable HTTPS (SSL)
 - Use DynamoDB (NoSQL DB)
 - Use S3 (File Storage)
+- AWS Cognito for user authtication
 
 ---
 
@@ -97,6 +98,47 @@ npm install
   - AmazonDynamoDBFullAccess
   - AmazonS3FullAccess
 4. Attach role to EC2 instance
+
+## AWS Cognito Setup
+1. Go to AWS Console → Cognito → User pools → Create user pool
+2. Set **User pool name** (example: `quickbites-users`)
+3. Configure sign-in options:
+  - Email (recommended)
+4. Configure password policy and MFA as needed
+5. Create the user pool
+
+### Create App Client
+1. Open your user pool → **App integration**
+2. Under **App clients**, click **Create app client**
+3. Select **Public client** (for browser-based app)
+4. Set app client name (example: `quickbites-web-client`)
+5. Save the client
+
+### Configure Hosted UI + OAuth
+1. In the same user pool, go to **App integration** → **Hosted UI**
+2. Set a Cognito domain (or custom domain)
+3. Under **Allowed callback URLs**, add: https://quickbites.akashdev.in/oauth2/idpresponse
+4. Under **Allowed sign-out URLs**, add your app logout/landing URL (example: `https://quickbites.akashdev.in/`) // This is under development
+5. Enable OAuth flows:
+  - Authorization code grant (recommended)
+6. Enable OAuth scopes:
+  - `openid`
+  - `email`
+  - `profile`
+7. Save changes
+
+### Create Test User
+1. Go to **Users** → **Create user**
+2. Create a test user with email and temporary password
+3. Sign in once and set a permanent password
+
+### App Config You Will Need
+Keep these values for application integration:
+- User Pool ID
+- App Client ID
+- Cognito Domain
+- AWS Region
+
 
 # RUN APPLICATION
 ## Run with PM2
