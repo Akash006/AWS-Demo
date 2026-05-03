@@ -1,0 +1,45 @@
+# Copy this file to terraform.tfvars and fill in the required values.
+# terraform.tfvars is excluded from version control (.gitignore) to keep
+# sensitive or environment-specific values out of the repository.
+#
+# Usage:
+#   cp terraform.tfvars.example terraform.tfvars
+#   # edit terraform.tfvars
+#   terraform init
+#   terraform plan
+#   terraform apply
+
+# ── General ──────────────────────────────────────────────────────────────────
+
+aws_region   = "ap-south-1"
+project_name = "quickbites"
+environment  = "dev"
+
+# ── EC2 / Auto Scaling ────────────────────────────────────────────────────────
+
+ec2_instance_type    = "t2.micro"
+ec2_key_pair_name    = "your-ec2-key-pair"  # Must already exist in AWS Console
+allowed_ssh_cidr     = "203.0.113.0/32"     # Replace with your own IP address
+docker_image         = "akash006/aws-demo-quickbites-webapp:v0427"
+app_port             = 3000
+asg_min_size         = 1
+asg_max_size         = 3
+asg_desired_capacity = 1
+
+# ── DynamoDB ──────────────────────────────────────────────────────────────────
+
+dynamo_table_name = "quickbites-orders"
+
+# ── S3 ────────────────────────────────────────────────────────────────────────
+
+s3_bucket_name          = "your-unique-bucket-name"  # Must be globally unique across all AWS accounts
+s3_cors_allowed_origins = ["https://your-domain.com"] # Restrict to your app's domain
+
+# ── Cognito ───────────────────────────────────────────────────────────────────
+
+cognito_user_pool_name  = "quickbites-users"
+cognito_app_client_name = "quickbites-web-client"
+cognito_domain_prefix   = "quickbites-yourname"  # Must be globally unique across all AWS accounts
+
+cognito_callback_urls = ["https://your-domain.com/oauth2/idpresponse"]
+cognito_logout_urls   = ["https://your-domain.com/"]
