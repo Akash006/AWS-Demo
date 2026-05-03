@@ -52,3 +52,18 @@ output "cognito_hosted_ui_domain" {
   description = "Cognito hosted-UI base URL (used for sign-in/sign-up pages)."
   value       = "https://${aws_cognito_user_pool_domain.main.domain}.auth.${var.aws_region}.amazoncognito.com"
 }
+
+output "lambda_function_name" {
+  description = "Name of the image-label-detector Lambda function."
+  value       = aws_lambda_function.image_label_detector.function_name
+}
+
+output "lambda_function_arn" {
+  description = "ARN of the image-label-detector Lambda function."
+  value       = aws_lambda_function.image_label_detector.arn
+}
+
+output "lambda_cloudwatch_log_group" {
+  description = "CloudWatch Log Group where Lambda execution logs are stored."
+  value       = aws_cloudwatch_log_group.lambda_logs.name
+}
