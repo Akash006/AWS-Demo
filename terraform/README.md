@@ -16,6 +16,9 @@ This directory contains Terraform configuration files that provision all AWS res
 | **S3 Bucket** | Private bucket for image uploads (with CORS for signed URLs) |
 | **IAM Role + Instance Profile** | Grants EC2 access to DynamoDB and S3 via instance metadata |
 | **Cognito User Pool** | Email-based sign-up/sign-in with hosted UI and OAuth 2.0 |
+| **Lambda Function** | `image-label-detector` — auto-triggered on S3 image uploads; uses Rekognition to classify food vs non-food images and publishes CloudWatch metrics |
+| **IAM Role (Lambda)** | Grants the Lambda function least-privilege access to S3, Rekognition, and CloudWatch |
+| **CloudWatch Log Group** | Stores Lambda execution logs with 14-day retention |
 
 ---
 
@@ -32,6 +35,7 @@ terraform/
 ├── dynamodb.tf               # DynamoDB orders table
 ├── s3.tf                     # S3 bucket, public access block, versioning, CORS
 ├── cognito.tf                # Cognito user pool, app client, hosted-UI domain
+├── lambda.tf                 # Lambda function, IAM role, S3 trigger, CloudWatch log group
 ├── templates/
 │   └── user_data.sh.tpl      # EC2 bootstrap script template (installs Docker, starts app)
 ├── terraform.tfvars.example  # Example variables file — copy to terraform.tfvars
@@ -110,6 +114,53 @@ After `terraform apply` completes, the **ALB DNS name** is printed as an output.
 | `cognito_user_pool_arn` | Cognito User Pool ARN |
 | `cognito_app_client_id` | Cognito App Client ID |
 | `cognito_hosted_ui_domain` | Cognito hosted-UI base URL |
+| `lambda_function_name` | Name of the image-label-detector Lambda function |
+| `lambda_function_arn` | ARN of the image-label-detector Lambda function |
+| `lambda_cloudwatch_log_group` | CloudWatch Log Group for Lambda logs |
+
+---
+
+## Lambda Demo — Image Food Classifier
+
+The `lambda.tf` file provisions an event-driven image classification pipeline:
+
+| Component | Details |
+|---|---|
+| **Trigger** | S3 `ObjectCreated` event for `.jpg`, `.jpeg`, `.png`, `.webp` files |
+| **Service** | Amazon Rekognition `DetectLabels` |
+| **Classification** | Checks detected labels against a curated set of food-related keywords |
+| **Logging** | Structured log lines written to CloudWatch Logs (`/aws/lambda/<function-name>`) |
+| **Metrics** | Custom CloudWatch metrics in namespace `QuickBites/ImageLabels` |
+
+### How it works
+
+1. A user uploads an image via the QuickBites web app (or directly to S3).
+2. S3 automatically invokes the Lambda function with the bucket name and object key.
+3. Lambda calls **Rekognition** to detect up to 20 labels (minimum confidence 70 %).
+4. If any label matches a food keyword the function:
+   - Logs `FOOD IMAGE DETECTED` with the matching labels.
+   - Increments the `FoodImageCount` CloudWatch metric.
+5. Otherwise the function:
+   - Logs `NON-FOOD IMAGE DETECTED` with all detected labels.
+   - Increments the `NonFoodImageCount` CloudWatch metric.
+6. `TotalImagesProcessed` is always incremented; `ProcessingErrors` is incremented on failures.
+
+### Viewing the metrics
+
+```bash
+# Stream Lambda logs
+aws logs tail /aws/lambda/<lambda_function_name output> --follow
+
+# Query food vs non-food counts (last hour)
+aws cloudwatch get-metric-statistics \
+  --namespace QuickBites/ImageLabels \
+  --metric-name FoodImageCount \
+  --dimensions Name=BucketName,Value=<s3_bucket_name output> \
+  --start-time $(date -u -d '1 hour ago' +%FT%TZ) \
+  --end-time   $(date -u +%FT%TZ) \
+  --period 3600 \
+  --statistics Sum
+```
 
 ---
 
